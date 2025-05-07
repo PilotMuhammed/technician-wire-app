@@ -25,3 +25,4 @@ dist-ssr
 
 src/data/adminCredentials.js
 src/supabase/client.js
+.env

@@ -1,7 +1,7 @@
 <template>
 <div class="page-wrapper">
     <div class="technician-card">
-    <h1>واجهة موظف الصيانة</h1>
+    <h3>لوحة موظف الصيانة</h3>
 
     <div class="form-section">
         <div class="form-group">
@@ -164,6 +164,12 @@ const formatTime = iso => new Date(iso).toLocaleTimeString("ar-IQ")
     color: #393E46;
     box-sizing: border-box;
 }
+
+select.input-clean {
+width: 100%;
+max-width: 100%;
+}
+
 
 @media screen and (max-width: 480px) {
 .technician-card {

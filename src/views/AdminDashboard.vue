@@ -2,7 +2,7 @@
 <div class="page-wrapper">
     <div class="admin-card">
     <div class="header">
-        <h1>لوحة المدير</h1>
+        <h2>لوحة المدير</h2>
         <button class="logout-button" @click="logout">تسجيل الخروج</button>
     </div>
 

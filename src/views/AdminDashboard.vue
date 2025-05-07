@@ -101,7 +101,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '@/supabase/client'
+import { supabase } from '../supabase/client'
 
 const router = useRouter()
 const pendingList = ref([])

@@ -1,7 +1,7 @@
 <template>
 <div class="page-wrapper">
     <div class="login-card">
-    <h1>نظام صرف الوايرات</h1>
+    <h4> أرشيف عمليات موظفين الصيانة </h4>
     <p class="description">يرجى تسجيل الدخول أو إنشاء حساب جديد لموظفي الصيانة.</p>
 
     <!-- تسجيل الدخول -->

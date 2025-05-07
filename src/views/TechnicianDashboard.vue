@@ -140,6 +140,9 @@ const formatTime = iso => new Date(iso).toLocaleTimeString("ar-IQ")
 }
 
 .form-section .form-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
     margin-bottom: 20px;
 }
 
@@ -151,6 +154,7 @@ const formatTime = iso => new Date(iso).toLocaleTimeString("ar-IQ")
 
 .input-clean {
     width: 100%;
+    max-width: 100%;
     padding: 12px;
     font-size: 16px;
     border: 1px solid #ccc;
@@ -158,6 +162,22 @@ const formatTime = iso => new Date(iso).toLocaleTimeString("ar-IQ")
     outline: none;
     background: transparent;
     color: #393E46;
+    box-sizing: border-box;
+}
+
+@media screen and (max-width: 480px) {
+.technician-card {
+padding: 20px 15px;
+}
+
+.form-group {
+margin-bottom: 16px;
+}
+
+.main-button {
+font-size: 15px;
+padding: 10px;
+}
 }
 
 .timestamp-box {

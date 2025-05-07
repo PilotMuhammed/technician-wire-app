@@ -6,7 +6,7 @@
     <div class="form-section">
         <div class="form-group">
         <label for="wire">نوع الواير:</label>
-        <select v-model="selectedWire" id="wire">
+        <select v-model="selectedWire" id="wire" class="input-clean">
             <option disabled value="">اختر نوع الواير</option>
             <option>BlueStorm 20m</option>
             <option>BlueStorm 30m</option>
@@ -15,7 +15,7 @@
 
         <div class="form-group">
         <label for="quantity">الكمية:</label>
-        <select v-model="selectedQuantity" id="quantity">
+        <select v-model="selectedQuantity" id="quantity" class="input-clean">
             <option disabled value="">اختر الكمية</option>
             <option v-for="n in 3" :key="n">{{ n }}</option>
         </select>
@@ -23,7 +23,7 @@
 
         <div class="form-group">
         <label for="notes">ملاحظات (اختياري):</label>
-        <input v-model="notes" id="notes" type="text" placeholder="اكتب ملاحظتك هنا إن وجدت" />
+        <input v-model="notes" id="notes" type="text" placeholder="اكتب ملاحظتك هنا إن وجدت" class="input-clean" />
         </div>
 
         <div class="timestamp-box">
@@ -64,10 +64,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { supabase } from '../supabase/client'
 
-const router = useRouter()
 const selectedWire = ref('')
 const selectedQuantity = ref('')
 const notes = ref('')
@@ -151,23 +149,26 @@ const formatTime = iso => new Date(iso).toLocaleTimeString("ar-IQ")
     font-weight: bold;
 }
 
-.form-group select,
-.form-group input {
+.input-clean {
     width: 100%;
     padding: 12px;
     font-size: 16px;
     border: 1px solid #ccc;
     border-radius: 8px;
     outline: none;
+    background: transparent;
+    color: #393E46;
 }
 
 .timestamp-box {
     background: #eef3e5;
-    padding: 12px;
-    border-radius: 10px;
-    margin: 15px 0;
+    padding: 14px;
+    border-radius: 14px;
+    margin: 20px 0;
     font-weight: bold;
     text-align: center;
+    font-size: 18px;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
 }
 
 .main-button {

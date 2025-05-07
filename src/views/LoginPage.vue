@@ -64,7 +64,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ADMIN_USERNAME, ADMIN_PASSWORD } from "../data/adminCredentials"
+const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 import { supabase } from "../supabase/client"
 
 const router = useRouter()

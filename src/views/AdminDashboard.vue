@@ -45,7 +45,9 @@
     <div v-if="selectedTechnician" class="section">
         <h2>سجل العمليات للموظف: {{ selectedTechnician.full_name }}</h2>
         <div class="wire-summary">
-        <p v-for="(total, wire) in wireTotals" :key="wire"> {{ wire }} = {{ total }} واير </p>
+        <p v-for="(total, wire) in wireTotals" :key="wire">
+            {{ wire }} = {{ total }} واير 
+        </p>
         </div>
         <div class="record-actions">
         <button class="hide-btn" @click="clearSelection">إخفاء السجل</button>
@@ -215,13 +217,13 @@ const confirmClearOperations = async () => {
 }
 // Sum Wire
 const wireTotals = computed(() => {
-const totals = {};
-operations.value.forEach(op => {
-if (op.wire) {
+    const totals = {};
+    selectedOperations.value.forEach(op => {
+    if (op.wire) {
     if (!totals[op.wire]) {
     totals[op.wire] = 0;
     }
-    totals[op.wire] += Number(op.quantity);
+    totals[op.wire] += Number(op.quantity) || 0;
 }
 });
     return totals;

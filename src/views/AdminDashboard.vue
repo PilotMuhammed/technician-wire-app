@@ -213,7 +213,7 @@ const confirmClearOperations = async () => {
     selectedOperations.value = []
     cancelClearOps()
 }
-
+// Sum Wire
 const wireTotals = computed(() => {
 const totals = {};
 operations.value.forEach(op => {

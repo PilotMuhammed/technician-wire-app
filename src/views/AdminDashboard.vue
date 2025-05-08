@@ -44,6 +44,9 @@
     <!-- سجل العمليات -->
     <div v-if="selectedTechnician" class="section">
         <h2>سجل العمليات للموظف: {{ selectedTechnician.full_name }}</h2>
+        <div class="wire-summary">
+        <p v-for="(total, wire) in wireTotals" :key="wire"> {{ wire }} = {{ total }} واير </p>
+        </div>
         <div class="record-actions">
         <button class="hide-btn" @click="clearSelection">إخفاء السجل</button>
         <button class="clear-ops-btn" @click="openClearOpsModal">🗑️ حذف كل العمليات</button>
@@ -210,6 +213,21 @@ const confirmClearOperations = async () => {
     selectedOperations.value = []
     cancelClearOps()
 }
+
+const wireTotals = computed(() => {
+const totals = {};
+operations.value.forEach(op => {
+if (op.wire) {
+    if (!totals[op.wire]) {
+    totals[op.wire] = 0;
+    }
+    totals[op.wire] += Number(op.quantity);
+}
+});
+    return totals;
+});
+
+
 </script>
 
 
@@ -385,6 +403,16 @@ margin: 0;
 .modal-content strong {
 color: #393E46;
 }
+
+.wire-summary {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #333;
+}
+
 
 .modal-buttons {
 display: flex;

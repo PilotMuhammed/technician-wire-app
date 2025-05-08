@@ -46,7 +46,7 @@
         <h2>سجل العمليات للموظف: {{ selectedTechnician.full_name }}</h2>
         <div class="wire-summary">
         <p v-for="(total, wire) in wireTotals" :key="wire">
-            {{ wire }} = {{ total }} واير 
+            {{ wire }} = {{ total }}  
         </p>
         </div>
         <div class="record-actions">

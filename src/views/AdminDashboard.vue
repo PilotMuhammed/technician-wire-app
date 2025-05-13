@@ -5,6 +5,11 @@
         <h2>لوحة المدير</h2>
         <button class="logout-button" @click="logout">تسجيل الخروج</button>
     </div>
+    <div style="margin-top: 15px;">
+    <button class="main-button" @click="goToInsertOperations">
+        ادراج العمليات
+    </button>
+    </div>
 
     <!-- الطلبات -->
     <div class="section">
@@ -229,11 +234,30 @@ const wireTotals = computed(() => {
     return totals;
 });
 
+const goToInsertOperations = () => {
+  router.push("/insert-operations") // 
+}
 
 </script>
 
 
 <style scoped>
+.main-button {
+    background-color: #A0C878;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    transition: 0.3s;
+    width: auto;
+}
+.main-button:hover {
+    background-color: #8eb964;
+}
+
 .page-wrapper {
 position: absolute;
 top: 0; left: 0; right: 0; bottom: 0;

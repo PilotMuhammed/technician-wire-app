@@ -245,7 +245,7 @@ const goToInsertOperations = () => {
 .main-button {
     background-color: #A0C878;
     color: white;
-    border: none;
+    border: none #9FB3DF;
     padding: 12px 25px;
     cursor: pointer;
     border-radius: 8px;

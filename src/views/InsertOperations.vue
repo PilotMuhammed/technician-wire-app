@@ -293,11 +293,17 @@ second: '2-digit',
 }
 
 async function addOperation() {
+    console.error('newOperation:', JSON.stringify(newOperation.value));
 const techUsername = newOperation.value.technician_username?.trim()
 const customerName = newOperation.value.customer_name?.trim()
 const paidAmount = newOperation.value.paid_amount
 
+console.error('techUsername:', techUsername);
+console.error('customerName:', customerName);
+console.error('paidAmount:', paidAmount);
+
 if (!techUsername || !customerName || paidAmount === null || paidAmount === '' || isNaN(paidAmount)) {
+    console.error('Validation failed:', { techUsername, customerName, paidAmount });
 showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
 return
 }

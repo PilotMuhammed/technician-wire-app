@@ -293,11 +293,11 @@ second: '2-digit',
 }
 
 async function addOperation() {
-if (!newOperation.value.technician_username ||
-    !newOperation.value.customer_name ||
-    newOperation.value.paid_amount === null ||
-    newOperation.value.paid_amount === '' ||
-    isNaN(newOperation.value.paid_amount)) {
+const techUsername = newOperation.value.technician_username?.trim()
+const customerName = newOperation.value.customer_name?.trim()
+const paidAmount = newOperation.value.paid_amount
+
+if (!techUsername || !customerName || paidAmount === null || paidAmount === '' || isNaN(paidAmount)) {
 showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
 return
 }

@@ -293,14 +293,15 @@ second: '2-digit',
 }
 
 async function addOperation() {
-if (!this.newOperation.technician_username ||
-    !this.newOperation.customer_name ||
-    this.newOperation.paid_amount === null ||
-    this.newOperation.paid_amount === '' ||
-    isNaN(this.newOperation.paid_amount)) {
+if (!newOperation.value.technician_username ||
+    !newOperation.value.customer_name ||
+    newOperation.value.paid_amount === null ||
+    newOperation.value.paid_amount === '' ||
+    isNaN(newOperation.value.paid_amount)) {
 showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
 return
 }
+
 newOperation.value.technician_fee = technicianFee.value
 
 const { error } = await supabase.from('operations').insert([

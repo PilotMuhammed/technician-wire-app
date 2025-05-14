@@ -179,7 +179,7 @@
         <select id='deleteTechnician' v-model='deleteTechnicianUsername' required >
         <option value="" disabled>اختر الموظف</option>
         <option v-for='tech in technicians' :key="'del-'+tech.username" :value='tech.username'>
-            {{ tech.username }}
+            {{ tech.full_name }}
         </option>
         </select>
 
@@ -506,9 +506,14 @@ padding:6px;
 border-radius:5px;
 border:1px solid #9fb3df;
 box-sizing:border-box;
+background-color: white;
+color: black;
+font-size: larger;
 }
 .form-group input[readonly] {
 background-color:#f0f0f0;
+color: #594100;
+font-weight: bold;
 }
 
 /* تنسيق الفلاتر */

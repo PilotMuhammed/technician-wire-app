@@ -210,7 +210,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { supabase } from '@/supabase/client.js' // عدل المسار حسب مشروعك
+import { supabase } from "../supabase/client"
 
 const technicianFee = ref(5)
 const technicians = ref([])

@@ -23,7 +23,7 @@
             <select id="technician" v-model="newOperation.technician_username" required>
             <option value="" disabled>اختر الفني</option>
             <option v-for="tech in technicians" :key="tech.username" :value="tech.username">
-                {{ tech.username }}
+                {{ tech.full_name }}
             </option>
             </select>
         </div>
@@ -246,7 +246,7 @@ const statusMessage = ref({ visible: false, text: '', type: 'success' })
 async function fetchTechnicians() {
 const { data, error } = await supabase
 .from('technicians')
-.select('username')
+.select('username', 'full_name')
 .eq('approved', true)
 .order('username', { ascending: true })
 

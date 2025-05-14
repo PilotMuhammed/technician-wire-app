@@ -23,7 +23,7 @@
             <select id="technician" v-model="newOperation.technician_username" required>
             <option value="" disabled>اختر الفني</option>
             <option v-for="tech in technicians" :key="tech.username" :value="tech.username">
-                {{ tech.full_name }}
+                {{ tech.username }}
             </option>
             </select>
         </div>
@@ -85,7 +85,7 @@
     <select id="filterTechnician" v-model="filterTechnician">
         <option value="">الكل</option>
         <option v-for="tech in technicians" :key="'filter-'+tech.username" :value="tech.username">
-        {{ tech.full_name }}
+        {{ tech.username }}
         </option>
     </select>
     </div>
@@ -179,7 +179,7 @@
         <select style="background-color: white; color: black; font-size: large;" id='deleteTechnician' v-model='deleteTechnicianUsername' required >
         <option value="" disabled>اختر الموظف</option>
         <option v-for='tech in technicians' :key="'del-'+tech.username" :value='tech.username'>
-            {{ tech.full_name }}
+            {{ tech.username }}
         </option>
         </select>
 
@@ -246,7 +246,7 @@ const statusMessage = ref({ visible: false, text: '', type: 'success' })
 async function fetchTechnicians() {
 const { data, error } = await supabase
 .from('technicians')
-.select('full_name', 'username')
+.select('username')
 .eq('approved', true)
 .order('username', { ascending: true })
 

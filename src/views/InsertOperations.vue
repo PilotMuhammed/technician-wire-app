@@ -246,7 +246,7 @@ const statusMessage = ref({ visible: false, text: '', type: 'success' })
 async function fetchTechnicians() {
 const { data, error } = await supabase
 .from('technicians')
-.select('username', 'full_name')
+.select('full_name', 'username')
 .eq('approved', true)
 .order('username', { ascending: true })
 

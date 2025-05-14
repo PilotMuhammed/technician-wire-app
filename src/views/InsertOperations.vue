@@ -221,7 +221,7 @@ const showAddModal = ref(false)
 const newOperation = ref({
 technician_username: '',
 customer_name: '',
-paid_amount: null,
+paid_amount: 0,
 technician_fee: null,
 notes: '',
 })
@@ -293,10 +293,19 @@ second: '2-digit',
 }
 
 async function addOperation() {
-if (!newOperation.value.technician_username || !newOperation.value.customer_name.trim() || newOperation.value.paid_amount === null) {
-showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
-return
+if (!newOperation.value.technician_username || !newOperation.value.customer_name?.trim() || !newOperation.value.paid_amount) {
+    showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
+    return
 }
+
+if (newOperation.value.paid_amount <= 0) {
+    showStatus('المبلغ المدفوع يجب أن يكون أكبر من الصفر.', 'error')
+    return
+}
+
+console.log('Submitted Data:', JSON.parse(JSON.stringify(newOperation.value)))
+
+
 newOperation.value.technician_fee = technicianFee.value
 
 const { error } = await supabase.from('operations').insert([

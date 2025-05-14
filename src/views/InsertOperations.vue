@@ -441,6 +441,7 @@ padding:5px 10px;
 width:80px;
 background-color: white;
 color: black;
+font-size: larger;
 }
 
 /* أزرار */
@@ -532,6 +533,7 @@ border-radius:5px;
 border:1px solid #9fb3df;
 background-color: white;
 color: black;
+font-size: larger;
 }
 
 /* جدول العمليات */

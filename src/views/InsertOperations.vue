@@ -293,7 +293,11 @@ second: '2-digit',
 }
 
 async function addOperation() {
-if (!newOperation.value.technician_username || !newOperation.value.customer_name?.trim() || !newOperation.value.paid_amount) {
+if (!this.newOperation.technician_username ||
+    !this.newOperation.customer_name ||
+    this.newOperation.paid_amount === null ||
+    this.newOperation.paid_amount === '' ||
+    isNaN(this.newOperation.paid_amount)) {
     showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
     return
 }

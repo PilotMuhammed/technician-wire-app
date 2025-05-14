@@ -176,7 +176,7 @@
         <h3 id='deleteAllTitle'>حذف جميع عمليات موظف</h3>
 
         <label for='deleteTechnician'>اختر موظف الحذف:</label><br />
-        <select id='deleteTechnician' v-model='deleteTechnicianUsername' required >
+        <select style="background-color: white; color: black; font-size: large;" id='deleteTechnician' v-model='deleteTechnicianUsername' required >
         <option value="" disabled>اختر الموظف</option>
         <option v-for='tech in technicians' :key="'del-'+tech.username" :value='tech.username'>
             {{ tech.full_name }}

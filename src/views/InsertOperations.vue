@@ -432,13 +432,15 @@ margin-bottom:20px;
 margin-bottom:20px;
 }
 .fee-input label {
-font-weight:bold;
+font-weight:bolder;
 }
 .fee-input input[type='number'] {
 border:1px solid #9fb3df;
 border-radius:5px;
 padding:5px 10px;
-width:150px;
+width:80px;
+background-color: white;
+color: black;
 }
 
 /* أزرار */
@@ -528,6 +530,8 @@ font-weight:bold;
 padding:6px; 
 border-radius:5px; 
 border:1px solid #9fb3df;
+background-color: white;
+color: black;
 }
 
 /* جدول العمليات */

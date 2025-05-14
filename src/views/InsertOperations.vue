@@ -221,7 +221,7 @@ const showAddModal = ref(false)
 const newOperation = ref({
 technician_username: '',
 customer_name: '',
-paid_amount: 0,
+paid_amount: null,
 technician_fee: null,
 notes: '',
 })
@@ -298,18 +298,9 @@ if (!this.newOperation.technician_username ||
     this.newOperation.paid_amount === null ||
     this.newOperation.paid_amount === '' ||
     isNaN(this.newOperation.paid_amount)) {
-    showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
-    return
+showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
+return
 }
-
-if (newOperation.value.paid_amount <= 0) {
-    showStatus('المبلغ المدفوع يجب أن يكون أكبر من الصفر.', 'error')
-    return
-}
-
-console.log('Submitted Data:', JSON.parse(JSON.stringify(newOperation.value)))
-
-
 newOperation.value.technician_fee = technicianFee.value
 
 const { error } = await supabase.from('operations').insert([

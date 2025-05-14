@@ -438,7 +438,7 @@ font-weight:bolder;
 border:1px solid #9fb3df;
 border-radius:5px;
 padding:5px 10px;
-width:80px;
+width:60px;
 background-color: white;
 color: black;
 font-size: larger;

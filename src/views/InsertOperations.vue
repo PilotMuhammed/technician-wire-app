@@ -23,32 +23,19 @@
             <select id="technician" v-model="newOperation.technician_username" required>
             <option value="" disabled>اختر الفني</option>
             <option v-for="tech in technicians" :key="tech.username" :value="tech.username">
-                {{ tech.username }}
+                {{ tech.full_name }}
             </option>
             </select>
         </div>
 
         <div class="form-group">
             <label for="customerName">اسم المشترك:</label>
-            <input
-            id="customerName"
-            v-model.trim="newOperation.customer_name"
-            type="text"
-            required
-            placeholder="أدخل اسم المشترك"
-            />
+            <input id="customerName" v-model.trim="newOperation.customer_name" type="text" required placeholder="أدخل اسم المشترك" />
         </div>
 
         <div class="form-group">
             <label for="paidAmount">المبلغ المدفوع:</label>
-            <input
-            id="paidAmount"
-            v-model.number="newOperation.paid_amount"
-            type="number"
-            min="0"
-            required
-            placeholder="أدخل المبلغ المدفوع"
-            />
+            <input id="paidAmount" v-model.number="newOperation.paid_amount" type="number" min="0" required placeholder="أدخل المبلغ المدفوع" />
         </div>
 
         <div class="form-group">
@@ -58,12 +45,7 @@
 
         <div class="form-group">
             <label for="notes">ملاحظات (اختياري):</label>
-            <textarea
-            id="notes"
-            v-model.trim="newOperation.notes"
-            placeholder="أدخل ملاحظات إن وجدت"
-            rows="3"
-            ></textarea>
+            <textarea id="notes" v-model.trim="newOperation.notes" placeholder="أدخل ملاحظات إن وجدت" rows="3"></textarea>
         </div>
 
         <div class="form-group">
@@ -83,332 +65,135 @@
     <div class="filter-group">
     <label for="filterTechnician">فلتر حسب موظف الصيانة:</label>
     <select id="filterTechnician" v-model="filterTechnician">
-        <option value="">الكل</option>
-        <option v-for="tech in technicians" :key="'filter-'+tech.username" :value="tech.username">
-        {{ tech.username }}
+        <option value="all">الكل</option>
+        <option v-for="tech in technicians" :key="tech.username" :value="tech.username">
+        {{ tech.full_name }}
         </option>
     </select>
     </div>
 
-    <!-- جدول عرض العمليات -->
-    <div class="operations-table-container">
+    <!-- جدول العمليات -->
     <table class="operations-table">
-        <thead>
+    <thead>
         <tr>
-            <th>رقم</th>
-            <th>موظف الصيانة</th>
-            <th>اسم المشترك</th>
-            <th>المبلغ المدفوع</th>
-            <th>أجرة الفني</th>
-            <th>ملاحظات</th>
-            <th>تاريخ العملية</th>
-            <th>حذف</th>
+        <th>حذف</th>
+        <th>تاريخ العملية</th>
+        <th>ملاحظات</th>
+        <th>أجرة الفني</th>
+        <th>المبلغ المدفوع</th>
+        <th>اسم المشترك</th>
+        <th>موظف الصيانة</th>
+        <th>رقم</th>
         </tr>
-        </thead>
-        <tbody>
-        <tr v-for="(op, index) in filteredOperations" :key="op.id">
-            <td>{{ index + 1 }}</td>
-            <td>{{ op.technician_username }}</td>
-            <td>{{ op.customer_name }}</td>
-            <td>{{ op.paid_amount }}</td>
-            <td>{{ op.technician_fee }}</td>
-            <td>{{ op.notes || '-' }}</td>
-            <td>{{ formatTimestamp(op.timestamp) }}</td>
-            <td>
-            <button @click="confirmDeleteSingle(op)" title="حذف العملية" class="btn-delete">
-                حذف
-            </button>
-            </td>
+    </thead>
+    <tbody>
+        <tr v-for="(operation, index) in filteredOperations" :key="operation.id">
+        <td><button class="btn-delete" @click="deleteOperation(operation.id)">حذف</button></td>
+        <td>{{ formatDate(operation.timestamp) }}</td>
+        <td>{{ operation.notes || '-' }}</td>
+        <td>{{ operation.technician_fee }}</td>
+        <td>{{ operation.paid_amount }}</td>
+        <td>{{ operation.customer_name }}</td>
+        <td>{{ getTechnicianFullName(operation.technician_username) }}</td>
+        <td>{{ index + 1 }}</td>
         </tr>
-        <tr v-if="filteredOperations.length === 0">
-            <td colspan="8" class="no-data">لا توجد عمليات لعرضها</td>
-        </tr>
-        </tbody>
+    </tbody>
     </table>
+
+    <!-- المجموعات -->
+    <div class="totals-row">
+    <div class="totals-card">مجموع أجور الفنيين لكل موظف<br>{{ filterTechnician }} : {{ totalFees.toFixed(2) }}</div>
+    <div class="totals-card">مجموع المبالغ المدفوعة لكل موظف<br>{{ filterTechnician }} : {{ totalPayments.toFixed(2) }}</div>
+    <button class="btn-delete-all" @click="deleteAllOperations">حذف جميع عمليات موظف</button>
     </div>
-
-    <!-- أزرار أسفل الجدول -->
-    <div class="bottom-buttons">
-    <!-- زر حذف العمليات لموظف معين -->
-    <button @click="showDeleteAllModal = true" class="btn-delete-all">
-        حذف جميع عمليات موظف
-    </button>
-
-    <!-- ملخص المبالغ المدفوعة لكل موظف -->
-    <div class="summary-box">
-        <h3>مجموع المبالغ المدفوعة لكل موظف</h3>
-        <ul>
-        <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'paid-'+tech">
-            {{ tech }} : {{ data.totalPaid.toFixed(2) }}
-        </li>
-        <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
-        </ul>
-    </div>
-
-    <!-- ملخص أجور الفنيين لكل موظف -->
-    <div class="summary-box">
-        <h3>مجموع أجور الفنيين لكل موظف</h3>
-        <ul>
-        <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'fee-'+tech">
-            {{ tech }} : {{ data.totalFee.toFixed(2) }}
-        </li>
-        <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
-        </ul>
-    </div>
-    </div>
-
-    <!-- نافذة تأكيد حذف عملية واحدة -->
-    <div v-if="showConfirmDeleteSingleModal" class="modal-overlay">
-    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="confirmDeleteTitle">
-        <h3 id="confirmDeleteTitle">تأكيد حذف العملية</h3>
-        <p>هل أنت متأكد من حذف هذه العملية؟</p>
-
-        <div class="form-actions center">
-        <button @click="deleteSingleOperation" class="btn-delete">حذف</button>
-        <button @click="showConfirmDeleteSingleModal = false" class="btn-cancel">إلغاء</button>
-        </div>
-    </div>
-    </div>
-
-    <!-- نافذة حذف جميع عمليات موظف -->
-    <div v-if="showDeleteAllModal" class="modal-overlay">
-    <div class="modal-content" role="dialog" aria-modal=true aria-labelledby="deleteAllTitle">
-        <h3 id='deleteAllTitle'>حذف جميع عمليات موظف</h3>
-
-        <label for='deleteTechnician'>اختر موظف الحذف:</label><br />
-        <select style="background-color: white; color: black; font-size: large;" id='deleteTechnician' v-model='deleteTechnicianUsername' required >
-        <option value="" disabled>اختر الموظف</option>
-        <option v-for='tech in technicians' :key="'del-'+tech.username" :value='tech.username'>
-            {{ tech.username }}
-        </option>
-        </select>
-
-        <p>هل أنت متأكد من حذف جميع العمليات لهذا الموظف؟ هذا الإجراء لا يمكن التراجع عنه.</p>
-
-        <div class="form-actions center">
-        <button @click='deleteAllOperationsForTechnician' class='btn-delete'>حذف</button>
-        <button @click='cancelDeleteAll' class='btn-cancel'>إلغاء</button>
-        </div>
-
-    </div>
-    </div>
-
-    <!-- رسائل الحالة -->
-    <div
-    v-if='statusMessage.visible'
-    class='status-popup'
-    :class="{ success : statusMessage.type==='success', error : statusMessage.type==='error' }"
-    role='alert'
-    aria-live='assertive'
-    >
-    {{ statusMessage.text }}
-    </div>
-
-</div><!-- insert-operations-card -->
-</div><!-- page-wrapper -->
+</div>
+</div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { supabase } from "../supabase/client"
+import { ref, computed, onMounted } from 'vue';
+import { supabase } from '../supabase';
 
-const technicianFee = ref(5)
-const technicians = ref([])
-const operations = ref([])
-const filterTechnician = ref('')
-const showAddModal = ref(false)
-
+const technicianFee = ref(0);
+const showAddModal = ref(false);
 const newOperation = ref({
 technician_username: '',
 customer_name: '',
 paid_amount: null,
 technician_fee: null,
 notes: '',
-})
+});
+const currentTimestampFormatted = new Date().toLocaleString('ar-EG');
+const filterTechnician = ref('all');
+const operations = ref([]);
+const technicians = ref([]);
 
-const currentTimestampFormatted = new Date().toLocaleString('ar-EG', {
-year: 'numeric',
-month: '2-digit',
-day: '2-digit',
-hour: '2-digit',
-minute: '2-digit',
-second: '2-digit',
-})
-
-const showConfirmDeleteSingleModal = ref(false)
-const operationToDelete = ref(null)
-
-const showDeleteAllModal = ref(false)
-const deleteTechnicianUsername = ref('')
-
-const statusMessage = ref({ visible: false, text: '', type: 'success' })
-
-async function fetchTechnicians() {
-const { data, error } = await supabase
-.from('technicians')
-.select('username')
-.eq('approved', true)
-.order('username', { ascending: true })
-
-if (error) {
-showStatus('خطأ في جلب بيانات الفنيين.', 'error')
-return
-}
-technicians.value = data || []
-}
-
-async function fetchOperations() {
-let query = supabase.from('operations').select('*').order('timestamp', { ascending: false })
-if (filterTechnician.value) {
-query = query.eq('technician_username', filterTechnician.value)
-}
-const { data, error } = await query
-if (error) {
-showStatus('خطأ في جلب العمليات.', 'error')
-return
-}
-operations.value = data || []
-}
-
-function showStatus(text, type = 'success', duration = 4000) {
-statusMessage.value = { visible: true, text, type }
-setTimeout(() => {
-statusMessage.value.visible = false
-statusMessage.value.text = ''
-statusMessage.value.type = 'success'
-}, duration)
-}
-
-function formatTimestamp(ts) {
-if (!ts) return '-'
-const d = new Date(ts)
-return d.toLocaleString('ar-EG', {
-year: 'numeric',
-month: '2-digit',
-day: '2-digit',
-hour: '2-digit',
-minute: '2-digit',
-second: '2-digit',
-})
-}
-
-async function addOperation() {
-    console.error('newOperation:', JSON.stringify(newOperation.value));
-const techUsername = newOperation.value.technician_username?.trim()
-const customerName = newOperation.value.customer_name?.trim()
-const paidAmount = newOperation.value.paid_amount
-
-console.error('techUsername:', techUsername);
-console.error('customerName:', customerName);
-console.error('paidAmount:', paidAmount);
-newOperation.value.technician_fee = technicianFee.value;
-
-
-if (!techUsername || !customerName || paidAmount === null || paidAmount === '' || isNaN(paidAmount)) {
-    console.error('Validation failed:', { techUsername, customerName, paidAmount });
-showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error')
-return
-}
-
-newOperation.value.technician_fee = technicianFee.value
-
-const { error } = await supabase.from('operations').insert([
-{
-    technician_username: newOperation.value.technician_username,
-    customer_name: newOperation.value.customer_name.trim(),
-    paid_amount: newOperation.value.paid_amount,
-    technician_fee: newOperation.value.technician_fee,
-    notes: newOperation.value.notes.trim() || null,
-},
-])
-
-if (error) {
-showStatus('حدث خطأ أثناء حفظ العملية.', 'error')
-return
-}
-
-showStatus('تمت إضافة العملية بنجاح.', 'success')
-closeAddModal()
-await fetchOperations()
-}
-
-function closeAddModal() {
-showAddModal.value = false
-newOperation.value = {
-technician_username: '',
-customer_name: '',
-paid_amount: null,
-technician_fee: null,
-notes: '',
-}
-}
-
-function confirmDeleteSingle(op) {
-operationToDelete.value = op
-showConfirmDeleteSingleModal.value = true
-}
-
-async function deleteSingleOperation() {
-if (!operationToDelete.value) return
-
-const { error } = await supabase.from('operations').delete().eq('id', operationToDelete.value.id)
-if (error) {
-showStatus('خطأ في حذف العملية.', 'error')
-return
-}
-
-showStatus('تم حذف العملية بنجاح.', 'success')
-showConfirmDeleteSingleModal.value = false
-operationToDelete.value = null
-await fetchOperations()
-}
-
-async function deleteAllOperationsForTechnician() {
-if (!deleteTechnicianUsername.value) {
-showStatus('يرجى اختيار موظف للحذف.', 'error')
-return
-}
-
-const { error } = await supabase.from('operations').delete().eq('technician_username', deleteTechnicianUsername.value)
-
-if (error) {
-showStatus('حدث خطأ أثناء حذف العمليات.', 'error')
-return
-}
-
-showStatus(`تم حذف جميع عمليات ${deleteTechnicianUsername.value} بنجاح.`, 'success')
-showDeleteAllModal.value = false
-deleteTechnicianUsername.value = ''
-await fetchOperations()
-}
-
-function cancelDeleteAll() {
-showDeleteAllModal.value = false
-deleteTechnicianUsername.value = ''
-}
-
-const paymentSummary = computed(() => {
-const summary = {}
-operations.value.forEach((op) => {
-const tech = op.technician_username || 'غير محدد'
-if (!summary[tech]) summary[tech] = { totalPaid: 0, totalFee: 0 }
-summary[tech].totalPaid += Number(op.paid_amount || 0)
-summary[tech].totalFee += Number(op.technician_fee || 0)
-})
-return summary
-})
+const getTechnicianFullName = (username) => {
+const tech = technicians.value.find(t => t.username === username);
+return tech ? tech.full_name : username;
+};
 
 const filteredOperations = computed(() => {
-return filterTechnician.value
-? operations.value.filter((op) => op.technician_username === filterTechnician.value)
-: operations.value
-})
+if (filterTechnician.value === 'all') return operations.value;
+return operations.value.filter(op => op.technician_username === filterTechnician.value);
+});
 
-onMounted(async () => {
-await fetchTechnicians()
-await fetchOperations()
-})
+const totalPayments = computed(() => {
+return filteredOperations.value.reduce((sum, op) => sum + (op.paid_amount || 0), 0);
+});
+
+const totalFees = computed(() => {
+return filteredOperations.value.reduce((sum, op) => sum + (op.technician_fee || 0), 0);
+});
+
+const fetchOperations = async () => {
+const { data, error } = await supabase.from('customer_operations').select('*');
+if (!error) operations.value = data;
+};
+
+const fetchTechnicians = async () => {
+const { data, error } = await supabase.from('technicians').select('*').eq('approved', true);
+if (!error) technicians.value = data;
+};
+
+const addOperation = async () => {
+newOperation.value.technician_fee = technicianFee.value;
+const { error } = await supabase.from('customer_operations').insert([
+{
+    ...newOperation.value,
+    timestamp: new Date().toISOString(),
+},
+]);
+if (!error) {
+showAddModal.value = false;
+fetchOperations();
+newOperation.value = {
+    technician_username: '',
+    customer_name: '',
+    paid_amount: null,
+    technician_fee: null,
+    notes: '',
+};
+}
+};
+
+const deleteOperation = async (id) => {
+const { error } = await supabase.from('customer_operations').delete().eq('id', id);
+if (!error) fetchOperations();
+};
+
+const deleteAllOperations = async () => {
+if (filterTechnician.value === 'all') return;
+const { error } = await supabase.from('customer_operations').delete().eq('technician_username', filterTechnician.value);
+if (!error) fetchOperations();
+};
+
+onMounted(() => {
+fetchOperations();
+fetchTechnicians();
+});
 </script>
+
 
 <style scoped>
 

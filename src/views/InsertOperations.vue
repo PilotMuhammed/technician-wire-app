@@ -66,187 +66,562 @@
     <label for="filterTechnician">فلتر حسب موظف الصيانة:</label>
     <select id="filterTechnician" v-model="filterTechnician">
         <option value="all">الكل</option>
-        <option v-for="tech in technicians" :key="tech.username" :value="tech.username">
+        <option v-for="tech in technicians" :key="'filter-' + tech.username" :value="tech.username">
         {{ tech.full_name }}
         </option>
     </select>
     </div>
 
-    <!-- جدول العمليات -->
+    <!-- جدول عرض العمليات -->
+    <div class="operations-table-container">
     <table class="operations-table">
-    <thead>
+        <thead>
         <tr>
-        <th>حذف</th>
-        <th>تاريخ العملية</th>
-        <th>ملاحظات</th>
-        <th>أجرة الفني</th>
-        <th>المبلغ المدفوع</th>
-        <th>اسم المشترك</th>
-        <th>موظف الصيانة</th>
-        <th>رقم</th>
+            <th>رقم</th>
+            <th>موظف الصيانة</th>
+            <th>اسم المشترك</th>
+            <th>المبلغ المدفوع</th>
+            <th>أجرة الفني</th>
+            <th>ملاحظات</th>
+            <th>تاريخ العملية</th>
+            <th>حذف</th>
         </tr>
-    </thead>
-    <tbody>
-        <tr v-for="(operation, index) in filteredOperations" :key="operation.id">
-        <td><button class="btn-delete" @click="deleteOperation(operation.id)">حذف</button></td>
-        <td>{{ formatDate(operation.timestamp) }}</td>
-        <td>{{ operation.notes || '-' }}</td>
-        <td>{{ operation.technician_fee }}</td>
-        <td>{{ operation.paid_amount }}</td>
-        <td>{{ operation.customer_name }}</td>
-        <td>{{ getTechnicianFullName(operation.technician_username) }}</td>
-        <td>{{ index + 1 }}</td>
+        </thead>
+        <tbody>
+        <tr v-for="(op, index) in filteredOperations" :key="op.id">
+            <td>{{ index + 1 }}</td>
+            <td>{{ getTechnicianFullName(op.technician_username) }}</td>
+            <td>{{ op.customer_name }}</td>
+            <td>{{ op.paid_amount }}</td>
+            <td>{{ op.technician_fee }}</td>
+            <td>{{ op.notes || '-' }}</td>
+            <td>{{ formatDate(op.timestamp) }}</td>
+            <td>
+            <button @click="confirmDeleteSingle(op)" title="حذف العملية" class="btn-delete">حذف</button>
+            </td>
         </tr>
-    </tbody>
+        <tr v-if="filteredOperations.length === 0">
+            <td colspan="8" class="no-data">لا توجد عمليات لعرضها</td>
+        </tr>
+        </tbody>
     </table>
+    </div>
 
-    <!-- المجموعات بتنسيق خاص -->
-    <div class="totals-row">
-    <div class="totals-card">
-        مجموع أجور الفنيين لكل موظف<br />
-        {{ getTechnicianFullName(filterTechnician) }} : {{ totalFees.toFixed(2) }}
+    <!-- ملخصات وأزرار -->
+    <div class="bottom-buttons">
+    <button @click="showDeleteAllModal = true" class="btn-delete-all">حذف جميع عمليات موظف</button>
+
+    <div class="summary-box">
+        <h3>مجموع المبالغ المدفوعة لكل موظف</h3>
+        <ul>
+        <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'paid-' + tech">
+            {{ getTechnicianFullName(tech) }} : {{ data.totalPaid.toFixed(2) }}
+        </li>
+        <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
+        </ul>
     </div>
-    <div class="totals-card">
-        مجموع المبالغ المدفوعة لكل موظف<br />
-        {{ getTechnicianFullName(filterTechnician) }} : {{ totalPayments.toFixed(2) }}
+
+    <div class="summary-box">
+        <h3>مجموع أجور الفنيين لكل موظف</h3>
+        <ul>
+        <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'fee-' + tech">
+            {{ getTechnicianFullName(tech) }} : {{ data.totalFee.toFixed(2) }}
+        </li>
+        <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
+        </ul>
     </div>
-    <button class="btn-delete-all" @click="deleteAllOperations">حذف جميع عمليات موظف</button>
+    </div>
+
+    <!-- تأكيد حذف عملية واحدة -->
+    <div v-if="showConfirmDeleteSingleModal" class="modal-overlay">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="confirmDeleteTitle">
+        <h3 id="confirmDeleteTitle">تأكيد حذف العملية</h3>
+        <p>هل أنت متأكد من حذف هذه العملية؟</p>
+
+        <div class="form-actions center">
+        <button @click="deleteSingleOperation" class="btn-delete">حذف</button>
+        <button @click="showConfirmDeleteSingleModal = false" class="btn-cancel">إلغاء</button>
+        </div>
+    </div>
+    </div>
+
+    <!-- نافذة حذف جميع عمليات موظف -->
+    <div v-if="showDeleteAllModal" class="modal-overlay">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="deleteAllTitle">
+        <h3 id="deleteAllTitle">حذف جميع عمليات موظف</h3>
+
+        <label for="deleteTechnician">اختر موظف الحذف:</label><br />
+        <select id="deleteTechnician" v-model="deleteTechnicianUsername" required>
+        <option value="" disabled>اختر الموظف</option>
+        <option v-for="tech in technicians" :key="'del-' + tech.username" :value="tech.username">
+            {{ tech.full_name }}
+        </option>
+        </select>
+
+        <p>هل أنت متأكد من حذف جميع العمليات لهذا الموظف؟ هذا الإجراء لا يمكن التراجع عنه.</p>
+
+        <div class="form-actions center">
+        <button @click="deleteAllOperationsForTechnician" class="btn-delete">حذف</button>
+        <button @click="cancelDeleteAll" class="btn-cancel">إلغاء</button>
+        </div>
+    </div>
+    </div>
+
+    <!-- رسائل الحالة -->
+    <div
+    v-if="statusMessage.visible"
+    class="status-popup"
+    :class="{ success: statusMessage.type === 'success', error: statusMessage.type === 'error' }"
+    role="alert"
+    aria-live="assertive"
+    >
+    {{ statusMessage.text }}
     </div>
 </div>
 </div>
 </template>
 
+
+
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue';
 import { supabase } from "../supabase/client"
 
-const technicianFee = ref(0)
-const showAddModal = ref(false)
-const filterTechnician = ref('all')
-const currentTimestampFormatted = new Date().toLocaleString('ar-EG')
+const technicianFee = ref(5);
+const technicians = ref([]);
+const operations = ref([]);
+const filterTechnician = ref('all');
+const showAddModal = ref(false);
+const showConfirmDeleteSingleModal = ref(false);
+const operationToDelete = ref(null);
+const showDeleteAllModal = ref(false);
+const deleteTechnicianUsername = ref('');
+const statusMessage = ref({ visible: false, text: '', type: 'success' });
 
 const newOperation = ref({
 technician_username: '',
 customer_name: '',
 paid_amount: null,
 technician_fee: null,
-notes: ''
-})
+notes: '',
+});
 
-const technicians = ref([])
-const operations = ref([])
+const currentTimestampFormatted = new Date().toLocaleString('ar-EG', {
+year: 'numeric',
+month: '2-digit',
+day: '2-digit',
+hour: '2-digit',
+minute: '2-digit',
+second: '2-digit',
+});
+
+const showStatus = (text, type = 'success', duration = 4000) => {
+statusMessage.value = { visible: true, text, type };
+setTimeout(() => {
+statusMessage.value.visible = false;
+statusMessage.value.text = '';
+statusMessage.value.type = 'success';
+}, duration);
+};
+
+const formatDate = (ts) => {
+if (!ts) return '-';
+return new Date(ts).toLocaleString('ar-EG', {
+year: 'numeric',
+month: '2-digit',
+day: '2-digit',
+hour: '2-digit',
+minute: '2-digit',
+second: '2-digit',
+});
+};
 
 const fetchTechnicians = async () => {
-const { data, error } = await supabase.from('technicians').select('*').eq('approved', true)
-if (!error) technicians.value = data
+const { data, error } = await supabase
+.from('technicians')
+.select('username, full_name')
+.eq('approved', true)
+.order('full_name', { ascending: true });
+
+if (error) {
+showStatus('خطأ في جلب بيانات الفنيين.', 'error');
+return;
 }
+technicians.value = data || [];
+};
 
 const fetchOperations = async () => {
-const { data, error } = await supabase.from('customer_operations').select('*')
-if (!error) operations.value = data
+let query = supabase.from('customer_operations').select('*').order('timestamp', { ascending: false });
+if (filterTechnician.value && filterTechnician.value !== 'all') {
+query = query.eq('technician_username', filterTechnician.value);
 }
-
-const getTechnicianFullName = (username) => {
-const tech = technicians.value.find(t => t.username === username)
-return tech ? tech.full_name : username
+const { data, error } = await query;
+if (error) {
+showStatus('خطأ في جلب العمليات.', 'error');
+return;
 }
-
-const formatDate = (dateString) => {
-if (!dateString) return '-'
-return new Date(dateString).toLocaleString('ar-EG')
-}
-
-const filteredOperations = computed(() => {
-if (filterTechnician.value === 'all') return operations.value
-return operations.value.filter(op => op.technician_username === filterTechnician.value)
-})
-
-const totalPayments = computed(() => {
-return filteredOperations.value.reduce((sum, op) => sum + (op.paid_amount || 0), 0)
-})
-
-const totalFees = computed(() => {
-return filteredOperations.value.reduce((sum, op) => sum + (op.technician_fee || 0), 0)
-})
+operations.value = data || [];
+};
 
 const addOperation = async () => {
-newOperation.value.technician_fee = technicianFee.value
+const techUsername = newOperation.value.technician_username?.trim();
+const customerName = newOperation.value.customer_name?.trim();
+const paidAmount = newOperation.value.paid_amount;
+
+if (!techUsername || !customerName || paidAmount === null || paidAmount === '' || isNaN(paidAmount)) {
+showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error');
+return;
+}
+
+newOperation.value.technician_fee = technicianFee.value;
+
 const { error } = await supabase.from('customer_operations').insert([
 {
     ...newOperation.value,
-    timestamp: new Date().toISOString()
-}
-])
-if (!error) {
-showAddModal.value = false
-fetchOperations()
-newOperation.value = {
-    technician_username: '',
-    customer_name: '',
-    paid_amount: null,
-    technician_fee: null,
-    notes: ''
-}
-}
+    timestamp: new Date().toISOString(),
+},
+]);
+
+if (error) {
+showStatus('حدث خطأ أثناء حفظ العملية.', 'error');
+return;
 }
 
-const deleteOperation = async (id) => {
-const { error } = await supabase.from('customer_operations').delete().eq('id', id)
-if (!error) fetchOperations()
-}
-
-const deleteAllOperations = async () => {
-if (filterTechnician.value === 'all') return
-const { error } = await supabase.from('customer_operations').delete().eq('technician_username', filterTechnician.value)
-if (!error) fetchOperations()
-}
+showStatus('تمت إضافة العملية بنجاح.', 'success');
+closeAddModal();
+await fetchOperations();
+};
 
 const closeAddModal = () => {
-showAddModal.value = false
-}
+showAddModal.value = false;
+newOperation.value = {
+technician_username: '',
+customer_name: '',
+paid_amount: null,
+technician_fee: null,
+notes: '',
+};
+};
 
-onMounted(() => {
-fetchTechnicians()
-fetchOperations()
-})
+const confirmDeleteSingle = (op) => {
+operationToDelete.value = op;
+showConfirmDeleteSingleModal.value = true;
+};
+
+const deleteSingleOperation = async () => {
+if (!operationToDelete.value) return;
+const { error } = await supabase.from('customer_operations').delete().eq('id', operationToDelete.value.id);
+if (error) {
+showStatus('خطأ في حذف العملية.', 'error');
+return;
+}
+showStatus('تم حذف العملية بنجاح.', 'success');
+showConfirmDeleteSingleModal.value = false;
+operationToDelete.value = null;
+await fetchOperations();
+};
+
+const deleteAllOperationsForTechnician = async () => {
+if (!deleteTechnicianUsername.value) {
+showStatus('يرجى اختيار موظف للحذف.', 'error');
+return;
+}
+const { error } = await supabase.from('customer_operations').delete().eq('technician_username', deleteTechnicianUsername.value);
+if (error) {
+showStatus('حدث خطأ أثناء حذف العمليات.', 'error');
+return;
+}
+showStatus(`تم حذف جميع عمليات ${getTechnicianFullName(deleteTechnicianUsername.value)} بنجاح.`, 'success');
+showDeleteAllModal.value = false;
+deleteTechnicianUsername.value = '';
+await fetchOperations();
+};
+
+const cancelDeleteAll = () => {
+showDeleteAllModal.value = false;
+deleteTechnicianUsername.value = '';
+};
+
+const getTechnicianFullName = (username) => {
+const tech = technicians.value.find(t => t.username === username);
+return tech ? tech.full_name : username;
+};
+
+const paymentSummary = computed(() => {
+const summary = {};
+operations.value.forEach((op) => {
+const tech = op.technician_username || 'غير محدد';
+if (!summary[tech]) summary[tech] = { totalPaid: 0, totalFee: 0 };
+summary[tech].totalPaid += Number(op.paid_amount || 0);
+summary[tech].totalFee += Number(op.technician_fee || 0);
+});
+return summary;
+});
+
+const filteredOperations = computed(() => {
+return filterTechnician.value && filterTechnician.value !== 'all'
+? operations.value.filter((op) => op.technician_username === filterTechnician.value)
+: operations.value;
+});
+
+onMounted(async () => {
+await fetchTechnicians();
+await fetchOperations();
+});
 </script>
 
+
+
 <style scoped>
-.totals-row {
+.page-wrapper {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(135deg, #A0C878, #9FB3DF);
 display: flex;
-justify-content: space-around;
-align-items: center;
-gap: 1rem;
-margin-top: 2rem;
-flex-wrap: wrap;
+justify-content: center;
+align-items: flex-start;
+padding: 40px 20px;
+overflow-y: auto;
 }
 
-.totals-card {
-background-color: #f6fdf6;
-border: 2px solid #A0C878;
-border-radius: 12px;
-padding: 1rem 2rem;
-text-align: center;
-font-weight: bold;
-font-size: 1.1rem;
+.insert-operations-card {
+background: #fff;
+border-radius: 20px;
+width: 100%;
+max-width: 1000px;
+padding: 30px;
+box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 color: #393E46;
-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-min-width: 230px;
+direction: rtl;
+text-align: right;
 }
 
+h2 {
+margin-bottom: 20px;
+}
+
+.fee-input {
+margin-bottom: 20px;
+}
+.fee-input label {
+font-weight: bolder;
+}
+.fee-input input[type='number'] {
+border: 1px solid #9fb3df;
+border-radius: 5px;
+padding: 5px 10px;
+width: 60px;
+background-color: white;
+color: black;
+font-size: larger;
+}
+
+.main-button,
+.btn-save,
+.btn-cancel,
+.btn-delete,
 .btn-delete-all {
-background-color: #f46a25;
-color: white;
-font-weight: bold;
+padding: 10px 20px;
 border: none;
-padding: 0.9rem 2rem;
-border-radius: 12px;
+border-radius: 8px;
 cursor: pointer;
-margin-top: 1rem;
+font-weight: bold;
+font-size: 16px;
 transition: background-color 0.3s ease;
 }
 
+.main-button,
+.btn-save {
+background-color: #a0c878;
+color: white;
+}
+.main-button:hover,
+.btn-save:hover {
+background-color: #8eb964;
+}
+
+.btn-cancel {
+background-color: #9fb3df;
+color: white;
+}
+.btn-cancel:hover {
+background-color: #7fa1d1;
+}
+
+.btn-delete {
+background-color: #e74c3c;
+color: white;
+}
+.btn-delete:hover {
+background-color: #c0392b;
+}
+
+.btn-delete-all {
+background-color: #e67e22;
+color: white;
+}
 .btn-delete-all:hover {
-background-color: #d85b1f;
+background-color: #d35400;
+}
+
+.form-group {
+margin-bottom: 15px;
+}
+.form-group label {
+font-weight: bold;
+}
+.form-group input[type='text'],
+.form-group input[type='number'],
+.form-group select,
+.form-group textarea {
+width: 100%;
+padding: 6px;
+border-radius: 5px;
+border: 1px solid #9fb3df;
+box-sizing: border-box;
+background-color: white;
+color: black;
+font-size: larger;
+}
+.form-group input[readonly] {
+background-color: #f0f0f0;
+color: #594100;
+font-weight: bold;
+}
+
+.filter-group {
+margin-top: 30px;
+margin-bottom: 15px;
+}
+.filter-group label {
+font-weight: bold;
+}
+.filter-group select {
+padding: 6px;
+border-radius: 5px;
+border: 1px solid #9fb3df;
+background-color: white;
+color: black;
+font-size: larger;
+}
+
+.operations-table-container {
+overflow-x: auto;
+}
+.operations-table-container::-webkit-scrollbar {
+height: 8px;
+}
+.operations-table-container::-webkit-scrollbar-thumb {
+background-color: #a0c878;
+border-radius: 4px;
+}
+.operations-table {
+width: 100%;
+border-collapse: collapse;
+text-align: right;
+}
+.operations-table th,
+.operations-table td {
+border: 1px solid #ccc;
+padding: 10px;
+}
+.operations-table thead th {
+background-color: #a0c878;
+color: white;
+}
+
+.no-data {
+text-align: center;
+color: #999;
+}
+
+.bottom-buttons {
+margin-top: 20px;
+display: flex;
+gap: 20px;
+flex-wrap: wrap;
+}
+.summary-box {
+flex-grow: 1;
+max-width: 300px;
+background: #f9f9f9;
+padding: 15px;
+border-radius: 8px;
+border: 1px solid #ddd;
+}
+.summary-box h3 {
+color: #a0c878;
+margin-bottom: 10px;
+}
+.summary-box ul {
+list-style: none;
+padding-left: 0;
+font-size: 14px;
+}
+.summary-box li.no-data {
+color: #999;
+}
+
+.modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(0, 0, 0, 0.5);
+z-index: 99;
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+.modal-content {
+background: white;
+padding: 30px;
+border-radius: 15px;
+width: 90%;
+max-width: 500px;
+text-align: center;
+box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+color: #393E46;
+max-height: 90vh;
+overflow-y: auto;
+}
+
+.modal-content h2,
+.modal-content h3 {
+margin-bottom: 15px;
+color: #a0c878;
+}
+
+.modal-buttons,
+.form-actions.center {
+display: flex;
+justify-content: center;
+gap: 15px;
+margin-top: 20px;
+}
+
+.status-popup {
+position: fixed;
+bottom: 20px;
+left: 50%;
+transform: translateX(-50%);
+padding: 12px 25px;
+border-radius: 8px;
+box-shadow: rgba(0, 0, 0, 0.15) 0 2px 8px;
+min-width: 300px;
+text-align: center;
+font-weight: bold;
+z-index: 10000;
+}
+.status-popup.success {
+background-color: #a0c878;
+}
+.status-popup.error {
+background-color: #e74c3c;
 }
 </style>

@@ -100,10 +100,16 @@
     </tbody>
     </table>
 
-    <!-- المجموعات -->
+    <!-- المجموعات بتنسيق التصميم المطلوب -->
     <div class="totals-row">
-    <div class="totals-card">مجموع أجور الفنيين لكل موظف<br>{{ filterTechnician }} : {{ totalFees.toFixed(2) }}</div>
-    <div class="totals-card">مجموع المبالغ المدفوعة لكل موظف<br>{{ filterTechnician }} : {{ totalPayments.toFixed(2) }}</div>
+    <div class="totals-card">
+        مجموع أجور الفنيين لكل موظف<br />
+        {{ getTechnicianFullName(filterTechnician) }} : {{ totalFees.toFixed(2) }}
+    </div>
+    <div class="totals-card">
+        مجموع المبالغ المدفوعة لكل موظف<br />
+        {{ getTechnicianFullName(filterTechnician) }} : {{ totalPayments.toFixed(2) }}
+    </div>
     <button class="btn-delete-all" @click="deleteAllOperations">حذف جميع عمليات موظف</button>
     </div>
 </div>
@@ -112,7 +118,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { supabase } from "../supabase/client"
+import { supabase } from '../supabase';
 
 const technicianFee = ref(0);
 const showAddModal = ref(false);
@@ -131,6 +137,11 @@ const technicians = ref([]);
 const getTechnicianFullName = (username) => {
 const tech = technicians.value.find(t => t.username === username);
 return tech ? tech.full_name : username;
+};
+
+const formatDate = (dateString) => {
+const date = new Date(dateString);
+return date.toLocaleString('ar-EG');
 };
 
 const filteredOperations = computed(() => {

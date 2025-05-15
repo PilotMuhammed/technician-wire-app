@@ -100,7 +100,7 @@
     </tbody>
     </table>
 
-    <!-- المجموعات بتنسيق التصميم المطلوب -->
+    <!-- المجموعات بتنسيق خاص -->
     <div class="totals-row">
     <div class="totals-card">
         مجموع أجور الفنيين لكل موظف<br />
@@ -117,356 +117,136 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from "../supabase/client"
 
-const technicianFee = ref(0);
-const showAddModal = ref(false);
+const technicianFee = ref(0)
+const showAddModal = ref(false)
+const filterTechnician = ref('all')
+const currentTimestampFormatted = new Date().toLocaleString('ar-EG')
+
 const newOperation = ref({
 technician_username: '',
 customer_name: '',
 paid_amount: null,
 technician_fee: null,
-notes: '',
-});
-const currentTimestampFormatted = new Date().toLocaleString('ar-EG');
-const filterTechnician = ref('all');
-const operations = ref([]);
-const technicians = ref([]);
+notes: ''
+})
 
-const getTechnicianFullName = (username) => {
-const tech = technicians.value.find(t => t.username === username);
-return tech ? tech.full_name : username;
-};
-
-const formatDate = (dateString) => {
-const date = new Date(dateString);
-return date.toLocaleString('ar-EG');
-};
-
-const filteredOperations = computed(() => {
-if (filterTechnician.value === 'all') return operations.value;
-return operations.value.filter(op => op.technician_username === filterTechnician.value);
-});
-
-const totalPayments = computed(() => {
-return filteredOperations.value.reduce((sum, op) => sum + (op.paid_amount || 0), 0);
-});
-
-const totalFees = computed(() => {
-return filteredOperations.value.reduce((sum, op) => sum + (op.technician_fee || 0), 0);
-});
-
-const fetchOperations = async () => {
-const { data, error } = await supabase.from('customer_operations').select('*');
-if (!error) operations.value = data;
-};
+const technicians = ref([])
+const operations = ref([])
 
 const fetchTechnicians = async () => {
-const { data, error } = await supabase.from('technicians').select('*').eq('approved', true);
-if (!error) technicians.value = data;
-};
+const { data, error } = await supabase.from('technicians').select('*').eq('approved', true)
+if (!error) technicians.value = data
+}
+
+const fetchOperations = async () => {
+const { data, error } = await supabase.from('customer_operations').select('*')
+if (!error) operations.value = data
+}
+
+const getTechnicianFullName = (username) => {
+const tech = technicians.value.find(t => t.username === username)
+return tech ? tech.full_name : username
+}
+
+const formatDate = (dateString) => {
+if (!dateString) return '-'
+return new Date(dateString).toLocaleString('ar-EG')
+}
+
+const filteredOperations = computed(() => {
+if (filterTechnician.value === 'all') return operations.value
+return operations.value.filter(op => op.technician_username === filterTechnician.value)
+})
+
+const totalPayments = computed(() => {
+return filteredOperations.value.reduce((sum, op) => sum + (op.paid_amount || 0), 0)
+})
+
+const totalFees = computed(() => {
+return filteredOperations.value.reduce((sum, op) => sum + (op.technician_fee || 0), 0)
+})
 
 const addOperation = async () => {
-newOperation.value.technician_fee = technicianFee.value;
+newOperation.value.technician_fee = technicianFee.value
 const { error } = await supabase.from('customer_operations').insert([
 {
     ...newOperation.value,
-    timestamp: new Date().toISOString(),
-},
-]);
+    timestamp: new Date().toISOString()
+}
+])
 if (!error) {
-showAddModal.value = false;
-fetchOperations();
+showAddModal.value = false
+fetchOperations()
 newOperation.value = {
     technician_username: '',
     customer_name: '',
     paid_amount: null,
     technician_fee: null,
-    notes: '',
-};
+    notes: ''
 }
-};
+}
+}
 
 const deleteOperation = async (id) => {
-const { error } = await supabase.from('customer_operations').delete().eq('id', id);
-if (!error) fetchOperations();
-};
+const { error } = await supabase.from('customer_operations').delete().eq('id', id)
+if (!error) fetchOperations()
+}
 
 const deleteAllOperations = async () => {
-if (filterTechnician.value === 'all') return;
-const { error } = await supabase.from('customer_operations').delete().eq('technician_username', filterTechnician.value);
-if (!error) fetchOperations();
-};
+if (filterTechnician.value === 'all') return
+const { error } = await supabase.from('customer_operations').delete().eq('technician_username', filterTechnician.value)
+if (!error) fetchOperations()
+}
+
+const closeAddModal = () => {
+showAddModal.value = false
+}
 
 onMounted(() => {
-fetchOperations();
-fetchTechnicians();
-});
+fetchTechnicians()
+fetchOperations()
+})
 </script>
 
-
 <style scoped>
-
-/* صفحة الإدخال */
-.page-wrapper {
-position: absolute;
-top:0; left:0; right:0; bottom:0;
-background: linear-gradient(135deg, #A0C878, #9FB3DF);
-display:flex;
-justify-content:center;
-align-items:flex-start;
-padding:40px 20px;
-overflow-y:auto;
+.totals-row {
+display: flex;
+justify-content: space-around;
+align-items: center;
+gap: 1rem;
+margin-top: 2rem;
+flex-wrap: wrap;
 }
 
-.insert-operations-card {
-background:#fff;
-border-radius:20px;
-width:100%;
-max-width:1000px;
-padding:30px;
-box-shadow:0 10px 25px rgba(0,0,0,0.1);
-color:#393E46;
-direction: rtl;
-text-align:right;
-}
-
-h2 {
-margin-bottom:20px;
-}
-
-/* حقل أجرة الفني */
-.fee-input {
-margin-bottom:20px;
-}
-.fee-input label {
-font-weight:bolder;
-}
-.fee-input input[type='number'] {
-border:1px solid #9fb3df;
-border-radius:5px;
-padding:5px 10px;
-width:60px;
-background-color: white;
-color: black;
-font-size: larger;
-}
-
-/* أزرار */
-.main-button,
-.btn-save,
-.btn-cancel,
-.btn-delete,
-.btn-delete-all {
-padding:10px 20px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-weight:bold;
-font-size:16px;
-transition: background-color .3s ease;
-}
-
-.main-button,
-.btn-save {
-background-color:#a0c878;
-color:white;
-}
-.main-button:hover,
-.btn-save:hover {
-background-color:#8eb964;
-}
-
-.btn-cancel {
-background-color:#9fb3df;
-color:white;
-}
-.btn-cancel:hover {
-background-color:#7fa1d1;
-}
-
-.btn-delete {
-background-color:#e74c3c;
-color:white;
-}
-.btn-delete:hover {
-background-color:#c0392b;
-}
-
-.btn-delete-all {
-background-color:#e67e22;
-color:white;
-}
-.btn-delete-all:hover {
-background-color:#d35400;
-}
-
-/* نموذج الإدخال */
-.form-group {
-margin-bottom:15px;
-}
-.form-group label {
-font-weight:bold;
-}
-.form-group input[type='text'],
-.form-group input[type='number'],
-.form-group select,
-.form-group textarea {
-width:100%;
-padding:6px;
-border-radius:5px;
-border:1px solid #9fb3df;
-box-sizing:border-box;
-background-color: white;
-color: black;
-font-size: larger;
-}
-.form-group input[readonly] {
-background-color:#f0f0f0;
-color: #594100;
+.totals-card {
+background-color: #f6fdf6;
+border: 2px solid #A0C878;
+border-radius: 12px;
+padding: 1rem 2rem;
+text-align: center;
 font-weight: bold;
+font-size: 1.1rem;
+color: #393E46;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+min-width: 230px;
 }
 
-/* تنسيق الفلاتر */
-.filter-group {
-margin-top:30px;
-margin-bottom:15px;
-}
-.filter-group label {
-font-weight:bold;
-}
-.filter-group select {
-padding:6px; 
-border-radius:5px; 
-border:1px solid #9fb3df;
-background-color: white;
-color: black;
-font-size: larger;
+.btn-delete-all {
+background-color: #f46a25;
+color: white;
+font-weight: bold;
+border: none;
+padding: 0.9rem 2rem;
+border-radius: 12px;
+cursor: pointer;
+margin-top: 1rem;
+transition: background-color 0.3s ease;
 }
 
-/* جدول العمليات */
-.operations-table-container {
-overflow-x:auto;
+.btn-delete-all:hover {
+background-color: #d85b1f;
 }
-.operations-table-container::-webkit-scrollbar {
-height:8px;
-}
-.operations-table-container::-webkit-scrollbar-thumb {
-background-color:#a0c878;
-border-radius:4px;
-}
-.operations-table {
-width:100%;
-border-collapse: collapse;
-text-align:right;
-}
-.operations-table th,
-.operations-table td {
-border:1px solid #ccc;
-padding:10px;
-}
-.operations-table thead th {
-background-color:#a0c878;
-color:white;
-}
-
-/* رسالة لا توجد بيانات */
-.no-data {
-text-align:center;
-color:#999;
-}
-
-/* أزرار أسفل الجدول */
-.bottom-buttons {
-margin-top:20px; 
-display:flex; 
-gap:20px; 
-flex-wrap: wrap; 
-}
-.summary-box {
-flex-grow:1; 
-max-width:300px; 
-background:#f9f9f9; 
-padding:15px; 
-border-radius:8px; 
-border:1px solid #ddd;
-}
-.summary-box h3 {
-color:#a0c878; 
-margin-bottom:10px; 
-}
-.summary-box ul {
-list-style:none; 
-padding-left:0; 
-font-size:14px; 
-}
-.summary-box li.no-data {
-color:#999; 
-}
-
-/* النوافذ المنبثقة */
-.modal-overlay {
-position: fixed;
-top:0; left:0; right:0; bottom:0;
-background-color: rgba(0,0,0,0.5);
-z-index:99;
-
-display:flex;
-justify-content:center;
-align-items:center;
-}
-
-.modal-content {
-background:white;
-padding:30px;
-border-radius:15px;
-
-width:90%;
-max-width:500px;
-
-text-align:center;
-
-box-shadow:0 10px 25px rgba(0,0,0,0.2);
-color:#393E46;
-
-max-height:90vh;
-overflow-y:auto;
-}
-
-.modal-content h2,
-.modal-content h3 {
-margin-bottom:15px;
-color:#a0c878;
-}
-
-.modal-buttons,
-.form-actions.center{
-display:flex;
-justify-content:center;
-gap:15px;
-margin-top:20px;
-}
-
-/* رسائل الحالة */
-.status-popup {
-position : fixed ;
-bottom :20px ;
-left :50% ;
-transform : translateX(-50%) ;
-padding :12px 25px ;
-border-radius :8px ;
-box-shadow : rgba(0,0,0,0.15) 0 2px 8px ;
-min-width :300px ;
-text-align:center ;
-font-weight:bold ;
-z-index :10000 ;
-}
-.status-popup.success {
-background-color : #a0c878 ;
-}
-.status-popup.error {
-background-color : #e74c3c ;
-}
-
 </style>

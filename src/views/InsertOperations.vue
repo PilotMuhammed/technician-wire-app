@@ -301,6 +301,8 @@ const paidAmount = newOperation.value.paid_amount
 console.error('techUsername:', techUsername);
 console.error('customerName:', customerName);
 console.error('paidAmount:', paidAmount);
+newOperation.value.technician_fee = technicianFee.value;
+
 
 if (!techUsername || !customerName || paidAmount === null || paidAmount === '' || isNaN(paidAmount)) {
     console.error('Validation failed:', { techUsername, customerName, paidAmount });

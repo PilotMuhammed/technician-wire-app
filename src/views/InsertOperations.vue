@@ -112,7 +112,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { supabase } from '../supabase';
+import { supabase } from "../supabase/client"
 
 const technicianFee = ref(0);
 const showAddModal = ref(false);

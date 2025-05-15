@@ -2,6 +2,8 @@
 <div class="page-wrapper">
     <div class="technician-card">
     <h3>لوحة موظف الصيانة</h3>
+    <p style="font-size: 18px; margin-top: -10px;">مرحبًا بك {{ fullName }}</p>
+
 
     <div class="form-section">
         <div class="form-group">
@@ -62,58 +64,86 @@
 </div>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase/client'
 
+// اسم المستخدم من التخزين المحلي
+const username = ref(localStorage.getItem("username") || "")
+
+// الاسم الكامل للموظف
+const fullName = ref("")
+
+// جلب الاسم الكامل من قاعدة البيانات
+const fetchFullName = async () => {
+const { data, error } = await supabase
+.from("technicians")
+.select("full_name")
+.eq("username", username.value)
+.single()
+
+if (!error && data) {
+fullName.value = data.full_name
+}
+}
+
+// العمليات
 const selectedWire = ref('')
 const selectedQuantity = ref('')
 const notes = ref('')
 const operations = ref([])
-const username = ref(localStorage.getItem("username") || "")
 
+// الوقت والتاريخ الحالي
 const now = ref(new Date())
 const formattedDate = computed(() => now.value.toLocaleDateString("ar-IQ"))
 const formattedTime = computed(() => now.value.toLocaleTimeString("ar-IQ"))
 
+// جلب العمليات الخاصة بالفني
 const fetchOperations = async () => {
-    const { data, error } = await supabase
-    .from("operations")
-    .select("*")
-    .eq("technician_username", username.value)
-    .order("timestamp", { ascending: false })
+const { data, error } = await supabase
+.from("operations")
+.select("*")
+.eq("technician_username", username.value)
+.order("timestamp", { ascending: false })
 
-    if (!error) operations.value = data
+if (!error) operations.value = data
 }
 
+// تنفيذ عند تحميل الصفحة
 onMounted(() => {
-    fetchOperations()
-    setInterval(() => now.value = new Date(), 1000)
+fetchFullName()
+fetchOperations()
+setInterval(() => now.value = new Date(), 1000)
 })
 
+// إرسال عملية جديدة
 const submitOperation = async () => {
-    if (!selectedWire.value || !selectedQuantity.value) return
+if (!selectedWire.value || !selectedQuantity.value) return
 
-    const { error } = await supabase.from("operations").insert({
-    technician_username: username.value,
-    wire: selectedWire.value,
-    quantity: parseInt(selectedQuantity.value),
-    notes: notes.value,
-    timestamp: new Date().toISOString()
-    })
+const { error } = await supabase.from("operations").insert({
+technician_username: username.value,
+wire: selectedWire.value,
+quantity: parseInt(selectedQuantity.value),
+notes: notes.value,
+timestamp: new Date().toISOString()
+})
 
-    if (!error) {
-    selectedWire.value = ''
-    selectedQuantity.value = ''
-    notes.value = ''
-    now.value = new Date()
-    fetchOperations()
-    }
+if (!error) {
+selectedWire.value = ''
+selectedQuantity.value = ''
+notes.value = ''
+now.value = new Date()
+fetchOperations()
+}
 }
 
+// تنسيق التاريخ والوقت في الجدول
 const formatDate = iso => new Date(iso).toLocaleDateString("ar-IQ")
 const formatTime = iso => new Date(iso).toLocaleTimeString("ar-IQ")
 </script>
+
+
 
 <style scoped>
 .page-wrapper {

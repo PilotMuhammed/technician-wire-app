@@ -10,17 +10,17 @@
     </div>
 
     <!-- زر إضافة عملية جديدة -->
-    <button class="main-button" @click="showAddModal = true">إضافة عملية جديدة</button>
+    <button class="main-button" @click="openAddModal">إضافة عملية جديدة</button>
 
-    <!-- نافذة إدخال العملية الجديدة -->
+    <!-- نافذة إدخال / تعديل العملية -->
     <div v-if="showAddModal" class="modal-overlay">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <h2 id="modalTitle">إدخال عملية صيانة جديدة</h2>
+        <h2 id="modalTitle">{{ isEditMode ? 'تعديل' : 'إدخال' }} عملية صيانة</h2>
 
-        <form @submit.prevent="addOperation">
+        <form @submit.prevent="isEditMode ? updateOperation() : addOperation()">
         <div class="form-group">
             <label for="technician">اختر موظف الصيانة:</label>
-            <select id="technician" v-model="newOperation.technician_username" required>
+            <select id="technician" v-model="newOperation.technician_username" required :disabled="isEditMode">
             <option value="" disabled>اختر الفني</option>
             <option v-for="tech in technicians" :key="tech.username" :value="tech.username">
                 {{ tech.full_name }}
@@ -84,6 +84,7 @@
             <th>أجرة الفني</th>
             <th>ملاحظات</th>
             <th>تاريخ العملية</th>
+            <th>تعديل</th>
             <th>حذف</th>
         </tr>
         </thead>
@@ -97,15 +98,19 @@
             <td>{{ op.notes || '-' }}</td>
             <td>{{ formatDate(op.timestamp) }}</td>
             <td>
+            <button @click="startEditOperation(op)" class="btn-edit" title="تعديل العملية">✏️</button>
+            </td>
+            <td>
             <button @click="confirmDeleteSingle(op)" title="حذف العملية" class="btn-delete">حذف</button>
             </td>
         </tr>
         <tr v-if="filteredOperations.length === 0">
-            <td colspan="8" class="no-data">لا توجد عمليات لعرضها</td>
+            <td colspan="9" class="no-data">لا توجد عمليات لعرضها</td>
         </tr>
         </tbody>
     </table>
     </div>
+
 
     <!-- ملخصات وأزرار -->
     <div class="bottom-buttons">
@@ -185,46 +190,49 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { supabase } from "../supabase/client"
+import { supabase } from '../supabase/client';
 
 const technicianFee = ref(5);
 const technicians = ref([]);
 const operations = ref([]);
 const filterTechnician = ref('all');
 const showAddModal = ref(false);
-const showConfirmDeleteSingleModal = ref(false);
-const operationToDelete = ref(null);
-const showDeleteAllModal = ref(false);
-const deleteTechnicianUsername = ref('');
-const statusMessage = ref({ visible: false, text: '', type: 'success' });
-
-const newOperation = ref({
-technician_username: '',
-customer_name: '',
-paid_amount: null,
-technician_fee: null,
-notes: '',
-});
-
+const isEditMode = ref(false);
+const operationToEdit = ref(null);
 const currentTimestampFormatted = new Date().toLocaleString('ar-EG', {
 year: 'numeric',
 month: '2-digit',
 day: '2-digit',
 hour: '2-digit',
 minute: '2-digit',
-second: '2-digit',
+second: '2-digit'
 });
 
-const showStatus = (text, type = 'success', duration = 4000) => {
+const newOperation = ref({
+technician_username: '',
+customer_name: '',
+paid_amount: null,
+technician_fee: null,
+notes: ''
+});
+
+const showConfirmDeleteSingleModal = ref(false);
+const operationToDelete = ref(null);
+const showDeleteAllModal = ref(false);
+const deleteTechnicianUsername = ref('');
+
+const statusMessage = ref({ visible: false, text: '', type: 'success' });
+
+function showStatus(text, type = 'success', duration = 4000) {
 statusMessage.value = { visible: true, text, type };
 setTimeout(() => {
 statusMessage.value.visible = false;
 statusMessage.value.text = '';
 statusMessage.value.type = 'success';
 }, duration);
-};
+}
 
-const formatDate = (ts) => {
+function formatDate(ts) {
 if (!ts) return '-';
 return new Date(ts).toLocaleString('ar-EG', {
 year: 'numeric',
@@ -232,55 +240,52 @@ month: '2-digit',
 day: '2-digit',
 hour: '2-digit',
 minute: '2-digit',
-second: '2-digit',
+second: '2-digit'
 });
+}
+
+const getTechnicianFullName = (username) => {
+const tech = technicians.value.find(t => t.username === username);
+return tech ? tech.full_name : username;
 };
 
-const fetchTechnicians = async () => {
-const { data, error } = await supabase
-.from('technicians')
-.select('username, full_name')
-.eq('approved', true)
-.order('full_name', { ascending: true });
-
-if (error) {
-showStatus('خطأ في جلب بيانات الفنيين.', 'error');
-return;
-}
-technicians.value = data || [];
+const openAddModal = () => {
+isEditMode.value = false;
+newOperation.value = {
+technician_username: '',
+customer_name: '',
+paid_amount: null,
+technician_fee: null,
+notes: ''
+};
+showAddModal.value = true;
 };
 
-const fetchOperations = async () => {
-let query = supabase.from('customer_operations').select('*').order('timestamp', { ascending: false });
-if (filterTechnician.value && filterTechnician.value !== 'all') {
-query = query.eq('technician_username', filterTechnician.value);
-}
-const { data, error } = await query;
-if (error) {
-showStatus('خطأ في جلب العمليات.', 'error');
-return;
-}
-operations.value = data || [];
+const startEditOperation = (op) => {
+isEditMode.value = true;
+operationToEdit.value = op;
+newOperation.value = {
+technician_username: op.technician_username,
+customer_name: op.customer_name,
+paid_amount: op.paid_amount,
+technician_fee: op.technician_fee,
+notes: op.notes || ''
+};
+showAddModal.value = true;
 };
 
 const addOperation = async () => {
-const techUsername = newOperation.value.technician_username?.trim();
-const customerName = newOperation.value.customer_name?.trim();
-const paidAmount = newOperation.value.paid_amount;
-
-if (!techUsername || !customerName || paidAmount === null || paidAmount === '' || isNaN(paidAmount)) {
+const { technician_username, customer_name, paid_amount } = newOperation.value;
+if (!technician_username || !customer_name || paid_amount === null || isNaN(paid_amount)) {
 showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error');
 return;
 }
-
 newOperation.value.technician_fee = technicianFee.value;
 
-const { error } = await supabase.from('customer_operations').insert([
-{
-    ...newOperation.value,
-    timestamp: new Date().toISOString(),
-},
-]);
+const { error } = await supabase.from('customer_operations').insert({
+...newOperation.value,
+timestamp: new Date().toISOString()
+});
 
 if (error) {
 showStatus('حدث خطأ أثناء حفظ العملية.', 'error');
@@ -289,18 +294,40 @@ return;
 
 showStatus('تمت إضافة العملية بنجاح.', 'success');
 closeAddModal();
-await fetchOperations();
+fetchOperations();
+};
+
+const updateOperation = async () => {
+if (!operationToEdit.value) return;
+const { customer_name, paid_amount, notes } = newOperation.value;
+const technician_fee = technicianFee.value;
+
+const { error } = await supabase
+.from('customer_operations')
+.update({ customer_name, paid_amount, technician_fee, notes })
+.eq('id', operationToEdit.value.id);
+
+if (error) {
+showStatus('فشل في تعديل العملية.', 'error');
+return;
+}
+
+showStatus('تم تعديل العملية بنجاح.', 'success');
+closeAddModal();
+fetchOperations();
 };
 
 const closeAddModal = () => {
 showAddModal.value = false;
+isEditMode.value = false;
 newOperation.value = {
 technician_username: '',
 customer_name: '',
 paid_amount: null,
 technician_fee: null,
-notes: '',
+notes: ''
 };
+operationToEdit.value = null;
 };
 
 const confirmDeleteSingle = (op) => {
@@ -310,15 +337,18 @@ showConfirmDeleteSingleModal.value = true;
 
 const deleteSingleOperation = async () => {
 if (!operationToDelete.value) return;
+
 const { error } = await supabase.from('customer_operations').delete().eq('id', operationToDelete.value.id);
+
 if (error) {
 showStatus('خطأ في حذف العملية.', 'error');
 return;
 }
+
 showStatus('تم حذف العملية بنجاح.', 'success');
 showConfirmDeleteSingleModal.value = false;
 operationToDelete.value = null;
-await fetchOperations();
+fetchOperations();
 };
 
 const deleteAllOperationsForTechnician = async () => {
@@ -326,15 +356,18 @@ if (!deleteTechnicianUsername.value) {
 showStatus('يرجى اختيار موظف للحذف.', 'error');
 return;
 }
+
 const { error } = await supabase.from('customer_operations').delete().eq('technician_username', deleteTechnicianUsername.value);
+
 if (error) {
 showStatus('حدث خطأ أثناء حذف العمليات.', 'error');
 return;
 }
-showStatus(`تم حذف جميع عمليات ${getTechnicianFullName(deleteTechnicianUsername.value)} بنجاح.`, 'success');
+
+showStatus('تم حذف جميع العمليات لهذا الموظف بنجاح.', 'success');
 showDeleteAllModal.value = false;
 deleteTechnicianUsername.value = '';
-await fetchOperations();
+fetchOperations();
 };
 
 const cancelDeleteAll = () => {
@@ -342,14 +375,9 @@ showDeleteAllModal.value = false;
 deleteTechnicianUsername.value = '';
 };
 
-const getTechnicianFullName = (username) => {
-const tech = technicians.value.find(t => t.username === username);
-return tech ? tech.full_name : username;
-};
-
 const paymentSummary = computed(() => {
 const summary = {};
-operations.value.forEach((op) => {
+operations.value.forEach(op => {
 const tech = op.technician_username || 'غير محدد';
 if (!summary[tech]) summary[tech] = { totalPaid: 0, totalFee: 0 };
 summary[tech].totalPaid += Number(op.paid_amount || 0);
@@ -359,14 +387,24 @@ return summary;
 });
 
 const filteredOperations = computed(() => {
-return filterTechnician.value && filterTechnician.value !== 'all'
-? operations.value.filter((op) => op.technician_username === filterTechnician.value)
-: operations.value;
+return filterTechnician.value === 'all'
+? operations.value
+: operations.value.filter(op => op.technician_username === filterTechnician.value);
 });
 
-onMounted(async () => {
-await fetchTechnicians();
-await fetchOperations();
+const fetchTechnicians = async () => {
+const { data, error } = await supabase.from('technicians').select('*').eq('approved', true);
+if (!error) technicians.value = data;
+};
+
+const fetchOperations = async () => {
+const { data, error } = await supabase.from('customer_operations').select('*').order('timestamp', { ascending: false });
+if (!error) operations.value = data;
+};
+
+onMounted(() => {
+fetchTechnicians();
+fetchOperations();
 });
 </script>
 
@@ -423,7 +461,8 @@ font-size: larger;
 .btn-save,
 .btn-cancel,
 .btn-delete,
-.btn-delete-all {
+.btn-delete-all,
+.btn-edit {
 padding: 10px 20px;
 border: none;
 border-radius: 8px;
@@ -465,6 +504,14 @@ color: white;
 }
 .btn-delete-all:hover {
 background-color: #d35400;
+}
+
+.btn-edit {
+background-color: #3498db;
+color: white;
+}
+.btn-edit:hover {
+background-color: #2980b9;
 }
 
 .form-group {

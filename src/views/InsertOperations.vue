@@ -530,7 +530,7 @@ overflow-y: auto;
 background: #fff;
 border-radius: 20px;
 width: 100%;
-max-width: 2000px;
+max-width: 1500px;
 padding: 30px;
 box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 color: #393E46;

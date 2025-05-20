@@ -16,7 +16,6 @@
     <div v-if="showAddModal" class="modal-overlay">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <h2 id="modalTitle">{{ isEditMode ? 'تعديل' : 'إدخال' }} عملية صيانة</h2>
-
         <form @submit.prevent="isEditMode ? updateOperation() : addOperation()">
         <div class="form-group">
             <label for="technician">اختر موظف الصيانة:</label>
@@ -41,6 +40,33 @@
         <div class="form-group">
             <label for="technicianFeeInput">أجرة موظف الصيانة:</label>
             <input id="technicianFeeInput" :value="technicianFee" type="number" readonly />
+        </div>
+
+        <!-- اختيار استخدام الواير -->
+        <div class="form-group wire-choice">
+            <span>هل تم استخدام واير في هذه العملية؟</span>
+            <label>
+            <input type="radio" value="yes" v-model="newOperation.used_wire" /> تم استخدام واير
+            </label>
+            <label>
+            <input type="radio" value="no" v-model="newOperation.used_wire" /> لم يتم استخدام واير
+            </label>
+        </div>
+
+        <!-- حقول الواير تظهر فقط عند اختيار "تم استخدام واير" -->
+        <div v-if="newOperation.used_wire === 'yes'" class="wire-details">
+            <div class="form-group">
+            <label for="wireType">نوع الواير المستخدم:</label>
+            <select id="wireType" v-model="newOperation.wire_type" required>
+                <option value="" disabled>اختر نوع الواير</option>
+                <option value="20m">BlueStorm 20m</option>
+                <option value="30m">BlueStorm 30m</option>
+            </select>
+            </div>
+            <div class="form-group">
+            <label for="wirePrice">سعر الواير:</label>
+            <input id="wirePrice" v-model.number="newOperation.wire_price" type="number" min="0" required placeholder="أدخل سعر الواير" />
+            </div>
         </div>
 
         <div class="form-group">
@@ -82,6 +108,8 @@
             <th>اسم المشترك</th>
             <th>المبلغ المدفوع</th>
             <th>أجرة الفني</th>
+            <th>تم استخدام واير؟</th>
+            <th>سعر الواير</th>
             <th>ملاحظات</th>
             <th>تاريخ العملية</th>
             <th>تعديل</th>
@@ -95,6 +123,16 @@
             <td>{{ op.customer_name }}</td>
             <td>{{ op.paid_amount }}</td>
             <td>{{ op.technician_fee }}</td>
+            <td>
+            <span v-if="op.used_wire === true || op.used_wire === 'yes'" class="wire-yes">نعم</span>
+            <span v-else class="wire-no">لا</span>
+            </td>
+            <td>
+            <span v-if="op.used_wire === true || op.used_wire === 'yes'">
+                {{ op.wire_price }}
+            </span>
+            <span v-else>—</span>
+            </td>
             <td>{{ op.notes || '-' }}</td>
             <td>{{ formatDate(op.timestamp) }}</td>
             <td>
@@ -105,12 +143,11 @@
             </td>
         </tr>
         <tr v-if="filteredOperations.length === 0">
-            <td colspan="9" class="no-data">لا توجد عمليات لعرضها</td>
+            <td colspan="11" class="no-data">لا توجد عمليات لعرضها</td>
         </tr>
         </tbody>
     </table>
     </div>
-
 
     <!-- ملخصات وأزرار -->
     <div class="bottom-buttons">
@@ -135,6 +172,26 @@
         <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
         </ul>
     </div>
+
+    <div class="summary-box">
+        <h3>مجموع مبالغ الوايرات لكل موظف</h3>
+        <ul>
+        <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'wire-' + tech">
+            {{ getTechnicianFullName(tech) }} : {{ data.totalWire.toFixed(2) }}
+        </li>
+        <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
+        </ul>
+    </div>
+
+    <div class="summary-box">
+        <h3>المجموع الكلي (أجور + وايرات) لكل موظف</h3>
+        <ul>
+        <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'all-' + tech">
+            {{ getTechnicianFullName(tech) }} : {{ (data.totalFee + data.totalWire).toFixed(2) }}
+        </li>
+        <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
+        </ul>
+    </div>
     </div>
 
     <!-- تأكيد حذف عملية واحدة -->
@@ -142,7 +199,6 @@
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="confirmDeleteTitle">
         <h3 id="confirmDeleteTitle">تأكيد حذف العملية</h3>
         <p>هل أنت متأكد من حذف هذه العملية؟</p>
-
         <div class="form-actions center">
         <button @click="deleteSingleOperation" class="btn-delete">حذف</button>
         <button @click="showConfirmDeleteSingleModal = false" class="btn-cancel">إلغاء</button>
@@ -154,7 +210,6 @@
     <div v-if="showDeleteAllModal" class="modal-overlay">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="deleteAllTitle">
         <h3 id="deleteAllTitle">حذف جميع عمليات موظف</h3>
-
         <label for="deleteTechnician">اختر موظف الحذف:</label><br />
         <select id="deleteTechnician" v-model="deleteTechnicianUsername" required>
         <option value="" disabled>اختر الموظف</option>
@@ -162,9 +217,7 @@
             {{ tech.full_name }}
         </option>
         </select>
-
         <p>هل أنت متأكد من حذف جميع العمليات لهذا الموظف؟ هذا الإجراء لا يمكن التراجع عنه.</p>
-
         <div class="form-actions center">
         <button @click="deleteAllOperationsForTechnician" class="btn-delete">حذف</button>
         <button @click="cancelDeleteAll" class="btn-cancel">إلغاء</button>
@@ -208,12 +261,16 @@ minute: '2-digit',
 second: '2-digit'
 });
 
+// تهيئة جميع الحقول المطلوبة
 const newOperation = ref({
 technician_username: '',
 customer_name: '',
 paid_amount: null,
 technician_fee: null,
-notes: ''
+notes: '',
+used_wire: 'no',    // Radio button: 'yes' or 'no'
+wire_type: '',
+wire_price: null
 });
 
 const showConfirmDeleteSingleModal = ref(false);
@@ -256,7 +313,10 @@ technician_username: '',
 customer_name: '',
 paid_amount: null,
 technician_fee: null,
-notes: ''
+notes: '',
+used_wire: 'no',    // افتراضي لم يتم استخدام واير
+wire_type: '',
+wire_price: null
 };
 showAddModal.value = true;
 };
@@ -269,23 +329,38 @@ technician_username: op.technician_username,
 customer_name: op.customer_name,
 paid_amount: op.paid_amount,
 technician_fee: op.technician_fee,
-notes: op.notes || ''
+notes: op.notes || '',
+used_wire: op.used_wire === true || op.used_wire === 'yes' ? 'yes' : 'no',
+wire_type: op.wire_type || '',
+wire_price: op.wire_price !== undefined && op.wire_price !== null ? Number(op.wire_price) : null
 };
 showAddModal.value = true;
 };
 
 const addOperation = async () => {
-const { technician_username, customer_name, paid_amount } = newOperation.value;
+const { technician_username, customer_name, paid_amount, used_wire, wire_type, wire_price } = newOperation.value;
 if (!technician_username || !customer_name || paid_amount === null || isNaN(paid_amount)) {
 showStatus('يرجى تعبئة جميع الحقول المطلوبة.', 'error');
 return;
 }
+if (used_wire === 'yes') {
+if (!wire_type || wire_price === null || isNaN(wire_price)) {
+    showStatus('يرجى اختيار نوع الواير وإدخال السعر.', 'error');
+    return;
+}
+}
+
 newOperation.value.technician_fee = technicianFee.value;
 
-const { error } = await supabase.from('customer_operations').insert({
+const insertData = {
 ...newOperation.value,
+used_wire: used_wire === 'yes', // يحفظ كبوليان في القاعدة
+wire_type: used_wire === 'yes' ? wire_type : null,
+wire_price: used_wire === 'yes' ? wire_price : null,
 timestamp: new Date().toISOString()
-});
+};
+
+const { error } = await supabase.from('customer_operations').insert(insertData);
 
 if (error) {
 showStatus('حدث خطأ أثناء حفظ العملية.', 'error');
@@ -299,12 +374,29 @@ fetchOperations();
 
 const updateOperation = async () => {
 if (!operationToEdit.value) return;
-const { customer_name, paid_amount, notes } = newOperation.value;
+const { customer_name, paid_amount, notes, used_wire, wire_type, wire_price } = newOperation.value;
 const technician_fee = technicianFee.value;
+
+if (used_wire === 'yes') {
+if (!wire_type || wire_price === null || isNaN(wire_price)) {
+    showStatus('يرجى اختيار نوع الواير وإدخال السعر.', 'error');
+    return;
+}
+}
+
+const updateData = {
+customer_name,
+paid_amount,
+technician_fee,
+notes,
+used_wire: used_wire === 'yes',
+wire_type: used_wire === 'yes' ? wire_type : null,
+wire_price: used_wire === 'yes' ? wire_price : null
+};
 
 const { error } = await supabase
 .from('customer_operations')
-.update({ customer_name, paid_amount, technician_fee, notes })
+.update(updateData)
 .eq('id', operationToEdit.value.id);
 
 if (error) {
@@ -325,7 +417,10 @@ technician_username: '',
 customer_name: '',
 paid_amount: null,
 technician_fee: null,
-notes: ''
+notes: '',
+used_wire: 'no',
+wire_type: '',
+wire_price: null
 };
 operationToEdit.value = null;
 };
@@ -375,13 +470,19 @@ showDeleteAllModal.value = false;
 deleteTechnicianUsername.value = '';
 };
 
+// دالة ملخص المبالغ تشمل كل شيء (مدفوع + أجور + وايرات + كلي)
 const paymentSummary = computed(() => {
 const summary = {};
 operations.value.forEach(op => {
 const tech = op.technician_username || 'غير محدد';
-if (!summary[tech]) summary[tech] = { totalPaid: 0, totalFee: 0 };
+if (!summary[tech]) summary[tech] = { totalPaid: 0, totalFee: 0, totalWire: 0 };
+
 summary[tech].totalPaid += Number(op.paid_amount || 0);
-summary[tech].totalFee += Number(op.technician_fee || 0);
+summary[tech].totalFee  += Number(op.technician_fee || 0);
+
+if (op.used_wire === true || op.used_wire === 'yes') {
+    summary[tech].totalWire += Number(op.wire_price || 0);
+}
 });
 return summary;
 });
@@ -441,6 +542,7 @@ h2 {
 margin-bottom: 20px;
 }
 
+/* أجرة الفني */
 .fee-input {
 margin-bottom: 20px;
 }
@@ -451,12 +553,13 @@ font-weight: bolder;
 border: 1px solid #9fb3df;
 border-radius: 5px;
 padding: 5px 10px;
-width: 60px;
+width: 80px;
 background-color: white;
 color: black;
 font-size: larger;
 }
 
+/* أزرار عامة */
 .main-button,
 .btn-save,
 .btn-cancel,
@@ -514,6 +617,7 @@ color: white;
 background-color: #2980b9;
 }
 
+/* حقول النماذج */
 .form-group {
 margin-bottom: 15px;
 }
@@ -539,6 +643,42 @@ color: #594100;
 font-weight: bold;
 }
 
+/* راديو الواير (wire-choice) */
+.wire-choice {
+margin-bottom: 15px;
+display: flex;
+gap: 25px;
+align-items: center;
+font-size: 1.08em;
+background: #f4f9f1;
+border-radius: 8px;
+padding: 10px 18px;
+border: 1px solid #a0c87833;
+}
+.wire-choice label {
+margin-bottom: 0;
+display: flex;
+align-items: center;
+gap: 5px;
+font-weight: bold;
+}
+.wire-choice input[type="radio"] {
+accent-color: #a0c878;
+width: 18px;
+height: 18px;
+}
+
+/* تفاصيل الواير */
+.wire-details {
+background: #eaf6ee;
+border: 1px solid #a0c87855;
+padding: 13px 18px 10px 18px;
+border-radius: 10px;
+margin-bottom: 15px;
+margin-top: -7px;
+}
+
+/* فلترة الموظفين */
 .filter-group {
 margin-top: 30px;
 margin-bottom: 15px;
@@ -555,6 +695,7 @@ color: black;
 font-size: larger;
 }
 
+/* الجدول */
 .operations-table-container {
 overflow-x: auto;
 }
@@ -574,10 +715,34 @@ text-align: right;
 .operations-table td {
 border: 1px solid #ccc;
 padding: 10px;
+white-space: nowrap;
 }
 .operations-table thead th {
 background-color: #a0c878;
 color: white;
+}
+
+/* ألوان عمود الواير نعم/لا */
+.wire-yes {
+color: #fff;
+background: #6fc97b;
+padding: 2px 12px;
+border-radius: 5px;
+font-weight: bold;
+letter-spacing: 1px;
+box-shadow: 0 1px 4px #a0c87844;
+display: inline-block;
+}
+
+.wire-no {
+color: #fff;
+background: #e97a7a;
+padding: 2px 12px;
+border-radius: 5px;
+font-weight: bold;
+letter-spacing: 1px;
+box-shadow: 0 1px 4px #e97a7a44;
+display: inline-block;
 }
 
 .no-data {
@@ -585,6 +750,7 @@ text-align: center;
 color: #999;
 }
 
+/* ملخصات وأزرار في الأسفل */
 .bottom-buttons {
 margin-top: 20px;
 display: flex;
@@ -612,6 +778,7 @@ font-size: 14px;
 color: #999;
 }
 
+/* المودالات */
 .modal-overlay {
 position: fixed;
 top: 0;
@@ -624,7 +791,6 @@ display: flex;
 justify-content: center;
 align-items: center;
 }
-
 .modal-content {
 background: white;
 padding: 30px;
@@ -637,13 +803,11 @@ color: #393E46;
 max-height: 90vh;
 overflow-y: auto;
 }
-
 .modal-content h2,
 .modal-content h3 {
 margin-bottom: 15px;
 color: #a0c878;
 }
-
 .modal-buttons,
 .form-actions.center {
 display: flex;
@@ -652,6 +816,7 @@ gap: 15px;
 margin-top: 20px;
 }
 
+/* رسائل الحالة */
 .status-popup {
 position: fixed;
 bottom: 20px;

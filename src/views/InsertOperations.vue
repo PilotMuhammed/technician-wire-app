@@ -522,7 +522,7 @@ background: linear-gradient(135deg, #A0C878, #9FB3DF);
 display: flex;
 justify-content: center;
 align-items: flex-start;
-padding: 40px 20px;
+padding: 15px 20px;
 overflow-y: auto;
 }
 
@@ -530,7 +530,7 @@ overflow-y: auto;
 background: #fff;
 border-radius: 20px;
 width: 100%;
-max-width: 1000px;
+max-width: 2000px;
 padding: 30px;
 box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 color: #393E46;

@@ -187,7 +187,7 @@
         <h3>المجموع الكلي (أجور + وايرات) لكل موظف</h3>
         <ul>
         <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'all-' + tech">
-            {{ getTechnicianFullName(tech) }} : {{ (data.totalFee + data.totalWire).toFixed(2) }}
+            {{ getTechnicianFullName(tech) }} : {{ (data.totalPaid + data.totalWire).toFixed(2) }}
         </li>
         <li v-if="Object.keys(paymentSummary).length === 0" class="no-data">لا توجد بيانات</li>
         </ul>

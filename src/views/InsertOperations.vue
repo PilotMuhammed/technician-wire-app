@@ -184,7 +184,7 @@
     </div>
 
     <div class="summary-box">
-        <h3>المجموع الكلي (أجور + وايرات) لكل موظف</h3>
+        <h3> مجموع مبالغ المشتركين + الوايرات لكل موظف </h3>
         <ul>
         <li v-for="[tech, data] in Object.entries(paymentSummary)" :key="'all-' + tech">
             {{ getTechnicianFullName(tech) }} : {{ (data.totalPaid + data.totalWire).toFixed(2) }}

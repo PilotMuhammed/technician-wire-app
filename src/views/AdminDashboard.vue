@@ -59,7 +59,7 @@
     <div><b>نوع الواير:</b> BlueStorm 20m</div>
     <div>
     <span>المسحوب:</span>
-    <b>{{ withdrawnByType['20m'] }}</b>
+    <b>{{ wireTotals['BlueStorm 20m'] || 0 }}</b>
     </div>
     <div>
     <span class="used-label">المستخدم:</span>
@@ -77,7 +77,7 @@
     <div><b>نوع الواير:</b> BlueStorm 30m</div>
     <div>
     <span>المسحوب:</span>
-    <b>{{ withdrawnByType['30m'] }}</b>
+    <b>{{ wireTotals['BlueStorm 30m'] || 0 }}</b>
     </div>
     <div>
     <span class="used-label">المستخدم:</span>
@@ -101,6 +101,7 @@
         {{ wire }} = {{ total }}  
         </p>
     </div>
+
 
     <div class="record-actions">
         <button class="hide-btn" @click="clearSelection">إخفاء السجل</button>
@@ -318,10 +319,11 @@ return res
 // المتبقي = المسحوب - المستخدم
 const remainingByType = computed(() => {
 return {
-'20m': withdrawnByType.value['20m'] - usedByType.value['20m'],
-'30m': withdrawnByType.value['30m'] - usedByType.value['30m'],
+'20m': (wireTotals.value['BlueStorm 20m'] || 0) - (usedByType.value['20m'] || 0),
+'30m': (wireTotals.value['BlueStorm 30m'] || 0) - (usedByType.value['30m'] || 0),
 }
 })
+
 
 // اختياري: اجمع الكل مع بعض (المجموع الكلي)
 const totalWithdrawnWires = computed(() => withdrawnByType.value['20m'] + withdrawnByType.value['30m'])

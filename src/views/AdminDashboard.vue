@@ -96,11 +96,11 @@
 
 
     <!-- ملخص الجدول القديم (مجموع السحب حسب النوع) -->
-    <div class="wire-summary" style="margin-top:8px;">
+    <!-- <div class="wire-summary" style="margin-top:8px;">
         <p v-for="(total, wire) in wireTotals" :key="wire">
         {{ wire }} = {{ total }}  
         </p>
-    </div>
+    </div> -->
 
 
     <div class="record-actions">
